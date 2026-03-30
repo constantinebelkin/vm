@@ -1,10 +1,10 @@
 #import "ControlPanelViewController.h"
 
 #import "ControlPanelView.h"
-#import "Machine.hpp"
+#import "VirtualMachine.hpp"
 
 @interface ControlPanelViewController () {
-    Machine *_machine;
+    VirtualMachine *_machine;
 }
 @end
 
@@ -13,7 +13,7 @@
 
 @implementation ControlPanelViewController (ControlPanelDelegate)
 
-- (void)controlPanelDidRequestAction:(enum ControlPanelAction)action { 
+- (void)controlPanelDidRequestAction:(enum ControlPanelAction)action {
     self->_machine->run();
 }
 
@@ -21,7 +21,7 @@
 
 @implementation ControlPanelViewController
 
-- (instancetype)initWithMachine:(Machine *const)machine {
+- (instancetype)initWithMachine:(VirtualMachine *const)machine {
     self = [super init];
     if (self != nil) {
         self->_machine = machine;
@@ -30,11 +30,11 @@
 }
 
 - (ControlPanelView *)controlPanel {
-    return (ControlPanelView *)[self view];
+    return (ControlPanelView *)self.view;
 }
 
 - (void)loadView {
-    [self setView:[[ControlPanelView alloc] init]];
+    self.view = [[ControlPanelView alloc] init];
 }
 
 - (void)viewDidLoad {

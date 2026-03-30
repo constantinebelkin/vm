@@ -1,9 +1,9 @@
 #import <AppKit/NSViewController.h>
 
-struct Machine;
+struct VirtualMachine;
 
 @interface ControlPanelViewController : NSViewController
 
-- (instancetype)initWithMachine:(Machine *const)machine;
+- (instancetype)initWithMachine:(VirtualMachine *const)machine;
 
 @end

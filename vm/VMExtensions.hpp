@@ -3,6 +3,10 @@
 
 #include <arm64/hv/hv_kern_types.h>
 
-void vm_safe_operation(hv_return_t vm_operation_result, const char description[]);
+namespace VM {
+
+void guard(hv_return_t vm_operation_result, const char description[]);
+
+}
 
 #endif

@@ -4,24 +4,6 @@
 
 using namespace metal;
 
-struct VertexMap {
-    float4 screen_position [[position]];
-    float2 texture_position;
-};
-
-vertex VertexMap vertex_shader(uint vertex_id [[vertex_id]], constant RenderMap *render_map [[buffer(0)]]) {
-    return VertexMap {
-        .screen_position = render_map->display_vertices[vertex_id],
-        .texture_position = render_map->texture_vertices[vertex_id]
-    };
-}
-
-fragment float4 fragment_shader(VertexMap vertex_map [[stage_in]], texture2d<float> texture [[texture(0)]]) {
-    sampler s(mag_filter::nearest, min_filter::nearest);
-    float mask = texture.sample(s, vertex_map.texture_position).r;
-    return float4(mask, mask, mask, 1.0);
-}
-
 struct VertexFramebufferMap {
     float4 screen_position [[position]];
     float2 texture_position;

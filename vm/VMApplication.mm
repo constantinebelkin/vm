@@ -2,33 +2,21 @@
 
 #import <AppKit/NSWindow.h>
 
-#import "Machine.hpp"
+#import "VirtualMachine.hpp"
 #import "RootViewController.h"
 
 @implementation VMApplication {
-    struct Machine *_machine;
+    std::unique_ptr<struct VirtualMachine> _machine;
     NSWindow *_mainWindow;
 }
 
-- (void)dealloc {
-    if (self->_mainWindow != nil) {
-        [self->_mainWindow dealloc];
-    }
-
-    if (self->_machine != nullptr) {
-        delete self->_machine;
-    }
-
-    [super dealloc];
-}
-
 - (void)applicationWillFinishLaunching:(NSNotification *)notification {
-    NSString *const firmwarePath = [[NSBundle mainBundle] pathForResource:@"firmware" ofType:@"bin"];
+    NSString *const firmwarePath = [NSBundle.mainBundle pathForResource:@"firmware" ofType:@"bin"];
     if (firmwarePath == nil) {
         NSLog(@"Firmware not found");
     }
 
-    self->_machine = new Machine([firmwarePath cStringUsingEncoding:NSASCIIStringEncoding]);
+    self->_machine = VirtualMachine::create([firmwarePath cStringUsingEncoding:NSASCIIStringEncoding]);
 }
 
 - (void)applicationDidFinishLaunching:(NSNotification *)notification {
@@ -37,8 +25,8 @@
                                                       backing:NSBackingStoreBuffered
                                                         defer:NO];
 
-    [self->_mainWindow setContentViewController:[[RootViewController alloc] initWithMachine:self->_machine]];
-    [self->_mainWindow setTitle:@"Virtual Machine"];
+    self->_mainWindow.contentViewController = [[RootViewController alloc] initWithMachine:self->_machine.get()];
+    self->_mainWindow.title = @"Virtual Machine";
     [self->_mainWindow makeKeyAndOrderFront:self];
 }
 

@@ -20,7 +20,7 @@
 - (void)layout {
     [super layout];
 
-    const NSRect rootViewBounds = [self bounds];
+    const NSRect rootViewBounds = self.bounds;
 
     const NSRect displayViewFrame = {
         .origin = {
@@ -43,8 +43,8 @@
         }
     };
 
-    [self->_controlPanelView setFrame:controlPanelViewFrame];
-    [self->_displayView setFrame:displayViewFrame];
+    self->_controlPanelView.frame = controlPanelViewFrame;
+    self->_displayView.frame = displayViewFrame;
 }
 
 @end

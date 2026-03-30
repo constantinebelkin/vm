@@ -23,22 +23,21 @@
 			membershipExceptions = (
 				ControlPanelView.m,
 				ControlPanelViewController.mm,
-				DisplayObserverAdapter.mm,
 				DisplayView.m,
 				DisplayViewController.mm,
 				firmware.bin,
-				Hardware/Display.cpp,
-				Hardware/Keyboard.cpp,
-				Hardware/Machine.cpp,
-				Hardware/ROM.cpp,
-				Hardware/UART.cpp,
+				Hardware/VirtualDisplay.cpp,
+				Hardware/VirtualKeyboard.cpp,
+				Hardware/VirtualMachine.cpp,
+				Hardware/VirtualRAM.cpp,
+				Hardware/VirtualROM.cpp,
 				MacOSFontTextureAtlas.m,
 				main.m,
 				RootView.m,
 				RootViewController.mm,
 				Shaders.metal,
 				VMApplication.mm,
-				VMOperationManager.c,
+				VMExtensions.cpp,
 			);
 			target = 447C4DF62F4B5E18004AA6E3 /* vm */;
 		};

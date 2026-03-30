@@ -1,22 +1,13 @@
 #import <AppKit/NSViewController.h>
 
-struct Display;
+struct VirtualDisplay;
+
+@interface DisplayViewController : NSViewController
 
 NS_ASSUME_NONNULL_BEGIN
 
-@protocol DisplayInputDelegate
-
-- (void)displayDidCatchInputWithEvent:(NSEvent *const)event;
-
-@end
-
-@interface DisplayViewController : NSViewController {
-@public
-    __weak id<DisplayInputDelegate> displayInputDelegate;
-}
-
-- (instancetype)initWithDisplay:(struct Display *const)display;
-
-@end
+- (instancetype)initWithDisplay:(struct VirtualDisplay *const)display;
 
 NS_ASSUME_NONNULL_END
+
+@end

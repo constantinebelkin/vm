@@ -1,8 +1,9 @@
 #import "DisplayViewController.h"
 
-#import "Display.hpp"
+#import <stdint.h>
+
+#import "VirtualDisplay.hpp"
 #import "DisplayView.h"
-#import "DisplayObserverAdapter.h"
 #import "MacOSFontTextureAtlas.h"
 #import "Shared.h"
 
@@ -13,19 +14,9 @@
     id<MTLRenderPipelineState> _renderPipelineState;
     id<MTLTexture> _texture;
     id<MTLBuffer> _renderBuffer;
+
+    uint8_t _frameVersion;
 }
-@end
-
-@interface DisplayViewController (DisplayObserver) <DisplayObserver>
-@end
-
-@implementation DisplayViewController (DisplayObserver)
-
-- (void)displayDidChangeBufferState:(struct Display *const)display {
-    uint8_t *const framebuffer = display->get_framebuffer();
-    self->_renderBuffer = [self->_gpu newBufferWithBytes:framebuffer length:2000 options:MTLResourceStorageModeShared];
-}
-
 @end
 
 @interface DisplayViewController (MTKViewDelegate) <MTKViewDelegate>
@@ -34,17 +25,24 @@
 @implementation DisplayViewController (MTKViewDelegate)
 
 - (void)drawInMTKView:(MTKView *)view {
+//    if (self->_renderBuffer == nil) {
+//        return;
+//    }
+
+//    const __auto_type buffer = (uint8_t *)self->_renderBuffer.contents;
+//    const uint8_t frameVersion = buffer[0];
+//    if (frameVersion == self->_frameVersion) {
+//        return;
+//    }
+
     const id<MTLCommandBuffer> commandBuffer = [self->_commandQueue commandBuffer];
-    MTLRenderPassDescriptor *const renderFrameDescriptor = [view currentRenderPassDescriptor];
+    MTLRenderPassDescriptor *const renderFrameDescriptor = view.currentRenderPassDescriptor;
     if (renderFrameDescriptor != nil) {
         const id<MTLRenderCommandEncoder> renderCommandEncoder = [commandBuffer renderCommandEncoderWithDescriptor:renderFrameDescriptor];
         if (self->_renderPipelineState != nil && self->_renderBuffer != nil && self->_texture != nil) {
             [renderCommandEncoder setRenderPipelineState:self->_renderPipelineState];
-            [renderCommandEncoder setVertexBuffer:self->_renderBuffer offset:0 atIndex:0];
+            [renderCommandEncoder setVertexBuffer:self->_renderBuffer offset:4 atIndex:0];
             [renderCommandEncoder setFragmentTexture:self->_texture atIndex:0];
-//            [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangleStrip
-//                                     vertexStart:0
-//                                     vertexCount:[self->_renderBuffer length]];
             [renderCommandEncoder drawPrimitives:MTLPrimitiveTypeTriangleStrip
                                      vertexStart:0
                                      vertexCount:4
@@ -52,9 +50,11 @@
         }
         [renderCommandEncoder endEncoding];
 
-        [commandBuffer presentDrawable:[view currentDrawable]];
+        [commandBuffer presentDrawable:view.currentDrawable];
     }
     [commandBuffer commit];
+
+//    self->_frameVersion = frameVersion;
 }
 
 - (void)mtkView:(MTKView *)view drawableSizeWillChange:(CGSize)size { /* Do nothing */ }
@@ -63,13 +63,12 @@
 
 @implementation DisplayViewController {
 @private
-    struct Display *_display;
-    struct DisplayObserverAdapter *_Nullable _observerAdapter;
+    struct VirtualDisplay *_display;
 
     MacOSFontTextureAtlas *_textureAtlas;
 }
 
-- (instancetype)initWithDisplay:(struct Display *const)display {
+- (instancetype)initWithDisplay:(struct VirtualDisplay *const)display {
     self = [super init];
     if (self) {
         self->_display = display;
@@ -77,21 +76,12 @@
     return self;
 }
 
-- (void)dealloc {
-    if (self->_observerAdapter != nullptr) {
-        self->_display->remove_observer(self->_observerAdapter);
-        delete self->_observerAdapter;
-    }
-
-    [super dealloc];
-}
-
 - (DisplayView *)displayView {
-    return (DisplayView *)[self view];
+    return (DisplayView *)self.view;
 }
 
 - (void)loadView {
-    [self setView:[[DisplayView alloc] init]];
+    self.view = [[DisplayView alloc] init];
 }
 
 - (void)viewDidLoad {
@@ -104,9 +94,9 @@
     self->_textureAtlas = [[MacOSFontTextureAtlas alloc] initWithDevice:gpu];
 
     DisplayView *const displayView = [self displayView];
-    [displayView setDevice:gpu];
-    [displayView setDelegate:self];
-    [displayView setClearColor:MTLClearColorMake(0.0, 0.0, 0.0, 1.0)];
+    displayView.device = gpu;
+    displayView.delegate = self;
+    displayView.clearColor = MTLClearColorMake(0.0, 0.0, 0.0, 1.0);
 
     auto *const renderMap = (struct RenderMap *)malloc(sizeof(struct RenderMap));
     simd_float4 display_vertices[4] = {
@@ -125,48 +115,28 @@
     };
     memcpy(renderMap->texture_vertices, texture_vertices, sizeof(renderMap->texture_vertices));
 
-//    self->_renderBuffer = [gpu newBufferWithBytes:renderMap
-//                                           length:sizeof(struct RenderMap)
-//                                          options:MTLResourceStorageModeShared];
+    const VirtualDisplay::FrameBuffer framebuffer = self->_display->framebuffer();
+    self->_renderBuffer = [gpu newBufferWithBytesNoCopy:static_cast<void*>(framebuffer.data)
+                                                 length:framebuffer.size
+                                                options:MTLResourceStorageModeShared
+                                            deallocator:nil];
 
     self->_texture = [self->_textureAtlas getTexture];
 
     const id<MTLLibrary> shadersLibrary = [gpu newDefaultLibrary];
-//    const id<MTLFunction> vertexShader = [shadersLibrary newFunctionWithName:@"vertex_shader"];
-//    const id<MTLFunction> fragmentShader = [shadersLibrary newFunctionWithName:@"fragment_shader"];
     const id<MTLFunction> vertexShader = [shadersLibrary newFunctionWithName:@"vertex_framebuffer"];
     const id<MTLFunction> fragmentShader = [shadersLibrary newFunctionWithName:@"fragment_framebuffer"];
 
     auto *const renderPipelineDescriptor = [[MTLRenderPipelineDescriptor alloc] init];
-    [renderPipelineDescriptor setVertexFunction:vertexShader];
-    [renderPipelineDescriptor setFragmentFunction:fragmentShader];
+    renderPipelineDescriptor.vertexFunction = vertexShader;
+    renderPipelineDescriptor.fragmentFunction = fragmentShader;
     renderPipelineDescriptor.colorAttachments[0].pixelFormat = self.displayView.colorPixelFormat;
 
     NSError *error;
     self->_renderPipelineState = [gpu newRenderPipelineStateWithDescriptor:renderPipelineDescriptor error:&error];
     if (error != nil) {
-        NSLog(@"%@", [error localizedDescription]);
+        NSLog(@"%@", error.localizedDescription);
     }
-
-    self->_observerAdapter = new struct DisplayObserverAdapter(self);
-    self->_display->add_observer(self->_observerAdapter);
-}
-
-- (void)viewDidAppear {
-    [super viewDidAppear];
-
-    DisplayView *const displayView = [self displayView];
-    [[displayView window] makeFirstResponder:displayView];
-}
-
-- (void)viewDidDisappear {
-    [super viewDidDisappear];
-
-    [[self displayView] resignFirstResponder];
-}
-
-- (void)keyDown:(NSEvent *)event {
-    [self->displayInputDelegate displayDidCatchInputWithEvent:event];
 }
 
 @end

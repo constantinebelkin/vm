@@ -1,9 +1,11 @@
 #import "VMApplication.h"
 
 int main(int argc, char const* argv[]) {
-    VMApplication *const application = [VMApplication sharedApplication];
-    [application setDelegate:application];
-    [application run];
-    [application dealloc];
+    @autoreleasepool {
+        VMApplication *const application = VMApplication.sharedApplication;
+        application.delegate = application;
+        [application run];
+    }
+
     return 0;
 }

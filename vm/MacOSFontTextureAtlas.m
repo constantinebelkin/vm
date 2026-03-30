@@ -32,10 +32,6 @@
     return self;
 }
 
-- (void)dealloc {
-    [super dealloc];
-}
-
 - (id<MTLTexture>)getTexture {
     if (self->_texture != nil) {
         return self->_texture;
