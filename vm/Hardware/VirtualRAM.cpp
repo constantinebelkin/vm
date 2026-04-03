@@ -10,7 +10,7 @@
 static constexpr hv_ipa_t GUEST_PHYSICAL_ADDRESS = 0x10000;
 
 VirtualRAM::VirtualRAM(const size_t size) noexcept {
-    void*const hostAddress = mmap(nullptr, size, PROT_READ, MAP_ANON | MAP_PRIVATE, -1, 0);
+    void*const hostAddress = mmap(nullptr, size, PROT_NONE, MAP_ANON | MAP_PRIVATE, -1, 0);
     if (hostAddress == MAP_FAILED) {
         std::print("Unable to allocate memory for virtual RAM");
         exit(EXIT_FAILURE);
@@ -21,7 +21,7 @@ VirtualRAM::VirtualRAM(const size_t size) noexcept {
             hostAddress,
             GUEST_PHYSICAL_ADDRESS,
             size,
-            HV_MEMORY_READ | HV_MEMORY_WRITE | HV_MEMORY_EXEC
+            HV_MEMORY_READ | HV_MEMORY_WRITE
         ),
         "VM memory map"
     );

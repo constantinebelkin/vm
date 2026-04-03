@@ -18,7 +18,7 @@ VirtualROM::VirtualROM(const char firmwarePath[]) noexcept {
         exit(EXIT_FAILURE);
     }
 
-    void*const hostAddress = mmap(nullptr, PAGE_SIZE, PROT_READ, MAP_PRIVATE, firmwareFileDescriptor, 0);
+    void*const hostAddress = mmap(nullptr, PAGE_SIZE, PROT_NONE, MAP_PRIVATE, firmwareFileDescriptor, 0);
     if (hostAddress == MAP_FAILED) {
         std::print("Unable to allocate memory for virtual ROM");
         exit(EXIT_FAILURE);

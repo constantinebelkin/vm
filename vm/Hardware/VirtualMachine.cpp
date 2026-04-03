@@ -109,16 +109,12 @@ private:
 
 std::unique_ptr<struct VirtualMachine> VirtualMachine::create(const char firmwarePath[]) noexcept {
     VM::guard(hv_vm_create(NULL), "VM create");
-    
+
     hv_gic_config_t config = hv_gic_config_create();
 
-    // 2. Задаем адрес для Distributor (обычно требует выравнивания 64КБ)
-    // Пусть будет 0x08000000
     hv_ipa_t dist_addr = 0x08000000;
     VM::guard(hv_gic_config_set_distributor_base(config, dist_addr), "GIC Dist base");
 
-    // 3. Задаем адрес для Redistributor (следом за дистрибьютором)
-    // Каждому vCPU нужно 128КБ. Если у тебя 1 CPU, 0x08000000 + 64КБ хватит.
     hv_ipa_t redist_addr = 0x08010000;
     VM::guard(hv_gic_config_set_redistributor_base(config, redist_addr), "GIC Redist base");
     
